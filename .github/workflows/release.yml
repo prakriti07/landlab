@@ -1,10 +1,6 @@
 name: PyPI
 
-on:
-  push:
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+
-      - '!*[ab][0-9]*'
+on: push
 
 
 env:
@@ -27,6 +23,9 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: manylinux
+            python_versions: 'cp37-cp37m cp38-cp38 cp39-cp39'
+          - os: ubuntu-latest
+            platform: manylinux2014_aarch64
             python_versions: 'cp37-cp37m cp38-cp38 cp39-cp39'
           - os: macos-latest
             platform: macosx
@@ -70,11 +69,18 @@ jobs:
           twine upload --skip-existing dist/*.tar.gz
 
       - name: Build manylinux Python wheels
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.platform != 'manylinux2014_aarch64'
         uses: RalfG/python-wheels-manylinux-build@v0.3.3-manylinux2010_x86_64
         with:
           python-versions: ${{ matrix.python_versions }}
           build-requirements: 'cython numpy'
+
+      - name: Build manylinux Python wheels
+        if: matrix.os == 'ubuntu-latest' && matrix.platform == 'manylinux2014_aarch64'
+        uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2014_aarch64
+        with:
+          python-versions: ${{ matrix.python_versions }}
+          build-requirements: 'cython numpy
 
       - name: Upload distributions
         run: twine upload --skip-existing dist/*-${{ matrix.platform }}*.whl
