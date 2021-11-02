@@ -24,9 +24,6 @@ jobs:
           - os: ubuntu-latest
             platform: manylinux
             python_versions: 'cp37-cp37m cp38-cp38 cp39-cp39'
-          - os: ubuntu-latest
-            platform: manylinux2014_aarch64
-            python_versions: 'cp37-cp37m cp38-cp38 cp39-cp39'
           - os: macos-latest
             platform: macosx
           - os: windows-latest
@@ -69,7 +66,7 @@ jobs:
           twine upload --skip-existing dist/*.tar.gz
 
       - name: Build manylinux Python wheels
-        if: matrix.os == 'ubuntu-latest' && matrix.platform != 'manylinux2014_aarch64'
+        if: matrix.os == 'ubuntu-latest'
         uses: RalfG/python-wheels-manylinux-build@v0.3.3-manylinux2010_x86_64
         with:
           python-versions: ${{ matrix.python_versions }}
@@ -77,6 +74,46 @@ jobs:
 
       - name: Build manylinux Python wheels
         if: matrix.os == 'ubuntu-latest' && matrix.platform == 'manylinux2014_aarch64'
+        uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2014_aarch64
+        with:
+          python-versions: ${{ matrix.python_versions }}
+          build-requirements: 'cython numpy'
+
+      - name: Upload distributions
+        run: twine upload --skip-existing dist/*-${{ matrix.platform }}*.whl
+
+  build-and-publish-aarch64:
+    name: Build and publish aarch64 wheel to PyPI
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.7, 3.8, 3.9]
+        include:
+          - os: ubuntu-latest
+            platform: manylinux2014_aarch64
+            python_versions: 'cp37-cp37m cp38-cp38 cp39-cp39'
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge
+          channel-priority: true
+
+      - name: Install build environment
+        run: pip install twine wheel numpy cython
+
+      - name: Build manylinux Python aarch64 wheels
+        if: matrix.os == 'ubuntu-latest'
         uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2014_aarch64
         with:
           python-versions: ${{ matrix.python_versions }}
